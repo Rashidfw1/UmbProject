@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, FormEvent } from 'react';
-import { streamChatResponse } from '../services/geminiService';
+import { streamChatResponse, isGeminiAvailable } from '../services/geminiService';
 import { useLocalization } from '../hooks/useLocalization';
 // Fix: Use relative paths for local module imports.
 import { ChatIcon, SendIcon, XIcon, UmbrellaIcon } from './Icons';
@@ -17,6 +17,11 @@ const Chatbot: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { t } = useLocalization();
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // If Gemini service is not available (e.g., missing API key), don't render the chatbot.
+  if (!isGeminiAvailable) {
+    return null;
+  }
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {

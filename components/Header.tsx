@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
@@ -9,7 +10,7 @@ import { Language, CurrencyCode } from '../types';
 import { CartIcon, HeartIcon, SearchIcon, ChevronDownIcon, MenuIcon, XIcon, UserIcon, CameraIcon, GlobeIcon, SpinnerIcon } from './Icons';
 import Modal from './Modal';
 import { translations } from '../data/localization';
-import { findSimilarProductsByImage } from '../services/geminiService';
+import { findSimilarProductsByImage, isGeminiAvailable } from '../services/geminiService';
 
 const Header: React.FC = () => {
     const context = useContext(AppContext);
@@ -60,6 +61,7 @@ const Header: React.FC = () => {
         noKeyboard: true,
         accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.webp'] },
         multiple: false,
+        disabled: !isGeminiAvailable,
     });
 
     useEffect(() => {
@@ -190,7 +192,13 @@ const Header: React.FC = () => {
                                 className="w-48 bg-gray-100 rounded-full py-2 pl-10 pr-10 rtl:pl-4 rtl:pr-10 focus:outline-none focus:ring-2 focus:ring-brand-gold transition-all"
                             />
                             <SearchIcon className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                             <button type="button" onClick={open} disabled={isImageSearching} className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-gold disabled:opacity-50">
+                             <button 
+                                type="button" 
+                                onClick={open} 
+                                disabled={isImageSearching || !isGeminiAvailable} 
+                                className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-gold disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!isGeminiAvailable ? "Image search is unavailable" : "Search by image"}
+                            >
                                 {isImageSearching ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <CameraIcon className="w-5 h-5" />}
                             </button>
                         </form>
