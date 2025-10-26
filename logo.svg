@@ -1,0 +1,17 @@
+<svg width="250" height="40" viewBox="0 0 250 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700');
+    </style>
+  </defs>
+  
+  <!-- Umbrella Icon -->
+  <g transform="translate(5, 5) scale(1.25)">
+    <path d="M22 12a10.06 10.06 0 0 0-20 0Z" style="stroke:#d4b0b0; stroke-width:1.5; fill:none;"/>
+    <path d="M12 12v8a2 2 0 0 0 4 0" style="stroke:#d4b0b0; stroke-width:1.5; fill:none;"/>
+    <path d="M12 2v1" style="stroke:#d4b0b0; stroke-width:1.5; fill:none;"/>
+  </g>
+
+  <!-- Text -->
+  <text x="40" y="29" style="font-family:'Cormorant Garamond', serif; fill:#1a1a1a; font-size:24px; font-weight:700;">Copy of Jewelry Umbrella</text>
+</svg>

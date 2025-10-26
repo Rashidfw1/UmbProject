@@ -1,3 +1,4 @@
+
 import React, { useState, useContext, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 // Fix: Use relative paths for local module imports.
@@ -17,18 +18,23 @@ const AdminProducts: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [formError, setFormError] = useState('');
+
 
     if (!context) return null;
-    const { products, setProducts } = context;
+    const { products, addProduct, updateProduct, deleteProduct } = context;
     
     const openModal = (product: Product | null) => {
         setCurrentProduct(product);
+        setFormError('');
         setIsModalOpen(true);
     };
 
     const closeModal = () => {
         setCurrentProduct(null);
         setIsModalOpen(false);
+        setFormError('');
     };
     
     const openDeleteModal = (product: Product) => {
@@ -41,82 +47,119 @@ const AdminProducts: React.FC = () => {
         setIsDeleteModalOpen(false);
     };
 
-    const handleSave = (productData: Product) => {
-        if (currentProduct && currentProduct.id) { // Editing existing product
-            setProducts(products.map(p => p.id === productData.id ? productData : p));
-        } else { // Adding new product
-            setProducts([...products, { ...productData, id: String(Date.now()) }]);
+    const handleSave = async (productData: Omit<Product, 'id'>, id?: string) => {
+        setIsSaving(true);
+        setFormError('');
+        try {
+            if (id) { // Editing existing product
+                await updateProduct({ ...productData, id });
+            } else { // Adding new product
+                await addProduct(productData);
+            }
+            setIsSaving(false);
+            closeModal();
+        } catch (e: any) {
+            setFormError(e.message);
+            setIsSaving(false);
         }
-        closeModal();
     };
     
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (productToDelete) {
-            setProducts(products.filter(p => p.id !== productToDelete.id));
+            await deleteProduct(productToDelete.id);
             closeDeleteModal();
         }
     };
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
                 <h2 className="text-2xl font-semibold text-brand-dark">{t('manageProducts')}</h2>
                 <button
                     onClick={() => openModal(null)}
-                    className="flex items-center gap-2 bg-brand-gold text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors"
+                    className="flex items-center justify-center gap-2 bg-brand-gold text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors w-full sm:w-auto"
                 >
                     <PlusIcon className="w-5 h-5" />
                     {t('addNewProduct')}
                 </button>
             </div>
-            <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('product')}</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('category')}</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('price')}</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {products.map((product) => (
-                            <tr key={product.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-10 w-10">
-                                            <img className="h-10 w-10 rounded-full object-cover" src={product.imageUrl} alt="" />
-                                        </div>
-                                        <div className="ml-4">
-                                            <div className="text-sm font-medium text-brand-dark">{product.name.en}</div>
-                                            <div className="text-sm text-gray-500">{product.name.ar}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{product.category}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(product.price)}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onClick={() => openModal(product)} className="text-indigo-600 hover:text-indigo-900 mr-4">
-                                        <EditIcon className="w-5 h-5" />
-                                    </button>
-                                    <button onClick={() => openDeleteModal(product)} className="text-red-600 hover:text-red-900">
-                                        <TrashIcon className="w-5 h-5" />
-                                    </button>
-                                </td>
+            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('product')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('category')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('price')}</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {products.map((product) => (
+                                <tr key={product.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <div className="flex-shrink-0 h-10 w-10">
+                                                <img className="h-10 w-10 rounded-full object-cover" src={product.imageUrl} alt="" />
+                                            </div>
+                                            <div className="ml-4 rtl:mr-4">
+                                                <div className="text-sm font-medium text-brand-dark">{product.name.en}</div>
+                                                <div className="text-sm text-gray-500">{product.name.ar}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{product.category}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(product.price)}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onClick={() => openModal(product)} className="text-indigo-600 hover:text-indigo-900 mr-4 rtl:ml-4">
+                                            <EditIcon className="w-5 h-5" />
+                                        </button>
+                                        <button onClick={() => openDeleteModal(product)} className="text-red-600 hover:text-red-900">
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile Card List */}
+                <div className="md:hidden">
+                    <div className="space-y-4 p-4">
+                         {products.map((product) => (
+                             <div key={product.id} className="bg-white p-4 rounded-lg shadow border border-gray-100">
+                                 <div className="flex items-center gap-4">
+                                     <img className="h-16 w-16 rounded-lg object-cover" src={product.imageUrl} alt="" />
+                                     <div className="flex-grow">
+                                         <p className="font-bold text-brand-dark">{product.name.en}</p>
+                                         <p className="text-sm text-brand-gold font-semibold">{formatCurrency(product.price)}</p>
+                                         <p className="text-sm text-gray-500 capitalize">{product.category}</p>
+                                     </div>
+                                 </div>
+                                 <div className="mt-4 pt-4 border-t flex justify-end gap-4">
+                                     <button onClick={() => openModal(product)} className="flex items-center gap-2 text-sm text-indigo-600 font-semibold">
+                                         <EditIcon className="w-4 h-4" /> {t('editProduct')}
+                                     </button>
+                                     <button onClick={() => openDeleteModal(product)} className="flex items-center gap-2 text-sm text-red-600 font-semibold">
+                                         <TrashIcon className="w-4 h-4" /> {t('delete')}
+                                     </button>
+                                 </div>
+                             </div>
+                         ))}
+                    </div>
+                </div>
             </div>
 
-            {isModalOpen && <ProductFormModal product={currentProduct} onSave={handleSave} onClose={closeModal} />}
+            {isModalOpen && <ProductFormModal product={currentProduct} onSave={handleSave} onClose={closeModal} isSaving={isSaving} error={formError} />}
             {isDeleteModalOpen && (
                 <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal} title={t('confirmDelete')}>
                     <div>
                         <p>{t('areYouSureDeleteProduct')}</p>
                         <div className="mt-6 flex justify-end gap-4">
                             <button onClick={closeDeleteModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md">{t('cancel')}</button>
-                            <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-md">{t('deleteProduct')}</button>
+                            <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-md">{t('delete')}</button>
                         </div>
                     </div>
                 </Modal>
@@ -127,11 +170,13 @@ const AdminProducts: React.FC = () => {
 
 interface ProductFormModalProps {
     product: Product | null;
-    onSave: (product: Product) => void;
+    onSave: (product: Omit<Product, 'id'>, id?: string) => void;
     onClose: () => void;
+    isSaving: boolean;
+    error: string;
 }
 
-const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onSave, onClose }) => {
+const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onSave, onClose, isSaving, error }) => {
     const { t } = useLocalization();
     const [formData, setFormData] = useState<Omit<Product, 'id'>>({
         name: { en: product?.name.en || '', ar: product?.name.ar || '' },
@@ -174,13 +219,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onSave, on
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ ...formData, id: product?.id || '' });
+        onSave(formData, product?.id);
     };
     
     return (
         <Modal isOpen={true} onClose={onClose} title={product ? t('editProduct') : t('addNewProduct')}>
             <form onSubmit={handleSubmit}>
-                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
+                    {error && <p className="text-red-500 bg-red-50 p-3 rounded-md text-sm mb-4">{error}</p>}
                     <div>
                         <label className="block text-sm font-medium text-gray-700">{t('productNameEn')}</label>
                         <input type="text" name="name.en" value={formData.name.en} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"/>
@@ -197,7 +243,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onSave, on
                         <label className="block text-sm font-medium text-gray-700">{t('descriptionAr')}</label>
                         <textarea name="description.ar" value={formData.description.ar} onChange={handleChange} required rows={3} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></textarea>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">{t('price')} (OMR)</label>
                             <input type="number" name="price" value={formData.price} onChange={handleChange} required min="0" step="0.001" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"/>
@@ -236,7 +282,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onSave, on
                 </div>
                 <div className="mt-6 flex justify-end gap-4 border-t pt-4">
                     <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md">{t('cancel')}</button>
-                    <button type="submit" className="px-4 py-2 bg-brand-gold text-white rounded-md">{t('save')}</button>
+                    <button type="submit" disabled={isSaving} className="px-4 py-2 bg-brand-gold text-white rounded-md disabled:bg-gray-400">{isSaving ? 'Saving...' : t('save')}</button>
                 </div>
             </form>
         </Modal>

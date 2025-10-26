@@ -1,4 +1,3 @@
-
 import React, { useState, useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 // Fix: Use relative paths for local module imports.
@@ -8,9 +7,12 @@ import AdminUsers from '../components/AdminUsers';
 import AdminOrders from '../components/AdminOrders';
 import AdminCoupons from '../components/AdminCoupons';
 import AdminHomepage from '../components/AdminHomepage';
+import AdminSiteSettings from '../components/AdminSiteSettings';
+import AdminAboutUs from '../components/AdminAboutUs';
+import AdminFaq from '../components/AdminFaq';
 import { useLocalization } from '../hooks/useLocalization';
 
-type AdminTab = 'products' | 'users' | 'orders' | 'coupons' | 'homepage';
+type AdminTab = 'products' | 'users' | 'orders' | 'coupons' | 'homepage' | 'siteSettings' | 'aboutUs' | 'faq';
 
 const AdminPage: React.FC = () => {
     const context = useContext(AppContext);
@@ -33,6 +35,12 @@ const AdminPage: React.FC = () => {
                 return <AdminCoupons />;
             case 'homepage':
                 return <AdminHomepage />;
+            case 'siteSettings':
+                return <AdminSiteSettings />;
+            case 'aboutUs':
+                return <AdminAboutUs />;
+            case 'faq':
+                return <AdminFaq />;
             default:
                 return null;
         }
@@ -44,26 +52,33 @@ const AdminPage: React.FC = () => {
         { id: 'orders', label: t('manageOrders') },
         { id: 'coupons', label: t('manageCoupons') },
         { id: 'homepage', label: t('manageHomepage') },
+        { id: 'siteSettings', label: t('manageSiteSettings') },
+        { id: 'aboutUs', label: t('manageAboutUs') },
+        { id: 'faq', label: t('manageFaq') },
     ];
 
     return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-brand-dark mb-8">{t('adminDashboard')}</h1>
 
-            <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 py-2 font-semibold whitespace-nowrap ${
-                            activeTab === tab.id
-                                ? 'border-b-2 border-brand-gold text-brand-gold'
-                                : 'text-gray-500 hover:text-brand-dark'
-                        }`}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
+            <div className="border-b border-gray-200 mb-6">
+                <div className="overflow-x-auto -mb-px">
+                    <div className="flex space-x-4">
+                         {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-3 py-2 font-semibold whitespace-nowrap text-sm sm:text-base ${
+                                    activeTab === tab.id
+                                        ? 'border-b-2 border-brand-gold text-brand-gold'
+                                        : 'text-gray-500 hover:text-brand-dark'
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
             
             <div>

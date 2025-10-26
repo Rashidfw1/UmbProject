@@ -10,8 +10,10 @@ import WishlistPage from './pages/WishlistPage';
 import SearchPage from './pages/SearchPage';
 import AdminPage from './pages/AdminPage';
 import CheckoutPage from './pages/CheckoutPage';
-import ThawaniMockPage from './pages/ThawaniMockPage';
+import ThawaniCallbackPage from './pages/ThawaniMockPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
+import AboutUsPage from './pages/AboutUsPage';
+import FaqPage from './pages/FaqPage';
 import Chatbot from './components/Chatbot';
 
 const App: React.FC = () => {
@@ -28,8 +30,10 @@ const App: React.FC = () => {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/thawani/callback" element={<ThawaniMockPage />} />
-          <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="/thawani/callback" element={<ThawaniCallbackPage />} />
+          <Route path="/order-confirmation/:id" element={<OrderConfirmationPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
+          <Route path="/faq" element={<FaqPage />} />
         </Routes>
       </main>
       <Footer />

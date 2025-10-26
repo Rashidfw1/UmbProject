@@ -1,74 +1,111 @@
+// Fix: Removed self-import of LocalizedString which conflicted with its local declaration.
 
 export type Language = 'en' | 'ar';
 
-export type LocalizedString = {
-  [key in Language]: string;
-};
-
-export interface Product {
+export type Product = {
   id: string;
   name: LocalizedString;
   description: LocalizedString;
   price: number; // in OMR
   imageUrl: string;
-  category: string;
-}
+  category: 'necklaces' | 'rings' | 'bracelets' | 'earrings';
+};
+
+export type CartItem = {
+  product: Product;
+  quantity: number;
+};
+
+export type LocalizedString = {
+  en: string;
+  ar: string;
+};
 
 export type CurrencyCode = 'OMR' | 'USD' | 'AED' | 'SAR' | 'QAR' | 'BHD' | 'KWD';
 
-export interface Currency {
+export type Currency = {
   code: CurrencyCode;
   name: LocalizedString;
   symbol: LocalizedString;
   decimalPlaces: number;
-}
-
-export interface CartItem {
-  product: Product;
-  quantity: number;
-}
-
-export type WishlistItem = Product;
+};
 
 export type UserRole = 'admin' | 'customer';
 export type UserStatus = 'active' | 'inactive' | 'suspended';
 
-export interface User {
+export type User = {
   id: string;
   name: string;
   email: string;
   password?: string;
   role: UserRole;
   status: UserStatus;
-}
+};
 
-export interface OrderItem {
-    productId: string;
-    productName: LocalizedString;
-    quantity: number;
-    price: number;
-}
+export type OrderStatus = 'Pending' | 'Pending Payment' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Payment Failed';
 
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type Order = {
+  id: string;
+  userId?: string;
+  customerName: string;
+  customerContact: string; // WhatsApp number for guest
+  items: CartItem[];
+  total: number;
+  date: string;
+  status: OrderStatus;
+  discountAmount?: number;
+  couponCode?: string;
+  paymentMethod: 'WhatsApp' | 'Thawani';
+  isGift: boolean;
+  recipientName?: string;
+  country: string; // e.g., 'oman', 'uae'
+  deliveryType?: 'home' | 'office'; // For Oman
+  governorate?: string;
+  wilayah?: string;
+  addressLine1?: string; // For GCC
+  addCard: boolean;
+  cardMessage?: string;
+  additionalNotes?: string;
+  deliveryFee?: number;
+};
 
-export interface Order {
-    id: string;
-    userId: string;
-    userName: string;
-    date: string;
-    items: OrderItem[];
-    total: number;
-    status: OrderStatus;
-}
 
-export interface Coupon {
-    id: string;
-    code: string;
-    discountPercentage: number;
-    expiryDate: string;
-    isActive: boolean;
-}
+export type Coupon = {
+  id: string;
+  code: string;
+  discountPercentage: number;
+  expiryDate: string;
+  isActive: boolean;
+};
 
-export interface HomepageContent {
-    heroImageUrl: string;
-}
+export type HomepageContent = {
+  heroImageUrl: string;
+  heroTitle: LocalizedString;
+  heroSubtitle: LocalizedString;
+  shopNowButton: LocalizedString;
+  featuredProductsTitle: LocalizedString;
+};
+
+export type CoreValue = {
+  title: LocalizedString;
+  description: LocalizedString;
+};
+
+export type AboutUsContent = {
+  title: LocalizedString;
+  paragraphs: LocalizedString[];
+  coreValuesTitle: LocalizedString;
+  coreValues: CoreValue[];
+};
+
+export type FAQItem = {
+  id: string;
+  question: LocalizedString;
+  answer: LocalizedString;
+};
+
+export type SocialMediaLinks = {
+  instagram: string;
+  snapchat: string;
+  twitter: string;
+};

@@ -13,14 +13,12 @@ const AdminUsers: React.FC = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isResetPassModalOpen, setIsResetPassModalOpen] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
-    const [userToResetPass, setUserToResetPass] = useState<User | null>(null);
     const [feedback, setFeedback] = useState({ message: '', type: '' });
 
     if (!context) return null;
-    const { users, addUser, updateUser, deleteUser, resetUserPassword } = context;
+    const { users, addUser, updateUser, deleteUser } = context;
 
     const openModal = (user: User | null) => {
         setCurrentUser(user);
@@ -32,14 +30,9 @@ const AdminUsers: React.FC = () => {
         setUserToDelete(user);
         setIsDeleteModalOpen(true);
     };
-    
-    const openResetPassModal = (user: User) => {
-        setUserToResetPass(user);
-        setIsResetPassModalOpen(true);
-    };
 
-    const handleSave = (userData: User) => {
-        const result = userData.id ? updateUser(userData) : addUser(userData);
+    const handleSave = async (userData: User) => {
+        const result = await (userData.id ? updateUser(userData) : addUser(userData));
         if (result.success) {
             setIsModalOpen(false);
         } else {
@@ -47,16 +40,12 @@ const AdminUsers: React.FC = () => {
         }
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (userToDelete) {
-            deleteUser(userToDelete.id);
+            await deleteUser(userToDelete.id);
             setIsDeleteModalOpen(false);
             setUserToDelete(null);
         }
-    };
-    
-    const handleResetPassword = (userId: string, newPass: string) => {
-        return resetUserPassword(userId, newPass);
     };
     
     const getStatusClass = (status: UserStatus) => {
@@ -70,47 +59,75 @@ const AdminUsers: React.FC = () => {
     
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
                 <h2 className="text-2xl font-semibold text-brand-dark">{t('userManagement')}</h2>
                 <button
                     onClick={() => openModal(null)}
-                    className="flex items-center gap-2 bg-brand-gold text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors"
+                    className="flex items-center justify-center gap-2 bg-brand-gold text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors w-full sm:w-auto"
                 >
                     <PlusIcon className="w-5 h-5" />
                     {t('addNewUser')}
                 </button>
             </div>
-            <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userName')}</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('email')}</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('role')}</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('status')}</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userName')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('email')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('role')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('status')}</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {users.map((user: User) => (
+                                <tr key={user.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-brand-dark">{user.name}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">{user.email}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-gray-500 capitalize">{user.role}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${getStatusClass(user.status)}`}>
+                                            {user.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onClick={() => openModal(user)} className="text-indigo-600 hover:text-indigo-900 mr-4" title={t('editUser')}><EditIcon className="w-5 h-5" /></button>
+                                        <button onClick={() => openDeleteModal(user)} className="text-red-600 hover:text-red-900" title={t('deleteUser')}><TrashIcon className="w-5 h-5" /></button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile Card List */}
+                <div className="md:hidden">
+                    <div className="space-y-4 p-4">
                         {users.map((user: User) => (
-                            <tr key={user.id}>
-                                <td className="px-6 py-4 whitespace-nowrap font-medium text-brand-dark">{user.name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-gray-500">{user.email}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 capitalize">{user.role}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${getStatusClass(user.status)}`}>
+                            <div key={user.id} className="bg-white p-4 rounded-lg shadow border border-gray-100">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-bold text-brand-dark">{user.name}</p>
+                                        <p className="text-sm text-gray-500">{user.email}</p>
+                                    </div>
+                                    <span className={`px-2 py-1 text-xs leading-5 font-semibold rounded-full capitalize ${getStatusClass(user.status)}`}>
                                         {user.status}
                                     </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onClick={() => openResetPassModal(user)} className="text-gray-500 hover:text-gray-800 mr-4" title={t('resetPassword')}><KeyIcon className="w-5 h-5"/></button>
-                                    <button onClick={() => openModal(user)} className="text-indigo-600 hover:text-indigo-900 mr-4" title={t('editUser')}><EditIcon className="w-5 h-5" /></button>
-                                    <button onClick={() => openDeleteModal(user)} className="text-red-600 hover:text-red-900" title={t('deleteUser')}><TrashIcon className="w-5 h-5" /></button>
-                                </td>
-                            </tr>
+                                </div>
+                                <div className="mt-2 text-sm text-gray-600">
+                                    <strong>{t('role')}:</strong> <span className="capitalize">{user.role}</span>
+                                </div>
+                                <div className="mt-4 pt-4 border-t flex justify-end gap-2">
+                                     <button onClick={() => openModal(user)} className="flex items-center gap-1 text-sm text-indigo-600 font-semibold p-2 rounded-md hover:bg-indigo-50"><EditIcon className="w-4 h-4" /> Edit</button>
+                                     <button onClick={() => openDeleteModal(user)} className="flex items-center gap-1 text-sm text-red-600 font-semibold p-2 rounded-md hover:bg-red-50"><TrashIcon className="w-4 h-4" /> Delete</button>
+                                </div>
+                            </div>
                         ))}
-                    </tbody>
-                </table>
+                    </div>
+                </div>
             </div>
 
             {isModalOpen && <UserFormModal user={currentUser} onSave={handleSave} onClose={() => setIsModalOpen(false)} feedback={feedback}/>}
@@ -124,16 +141,6 @@ const AdminUsers: React.FC = () => {
                         </div>
                     </div>
                 </Modal>
-            )}
-             {isResetPassModalOpen && userToResetPass && (
-                 <ResetPasswordModal 
-                    user={userToResetPass}
-                    onClose={() => {
-                        setIsResetPassModalOpen(false);
-                        setUserToResetPass(null);
-                    }}
-                    onReset={handleResetPassword}
-                 />
             )}
         </div>
     );
@@ -185,7 +192,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onSave, onClose, fe
                             <input type="password" name="password" value={formData.password} onChange={handleChange} required className="mt-1 block w-full input"/>
                         </div>
                     )}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                          <div>
                             <label className="block text-sm font-medium">{t('role')}</label>
                             <select name="role" value={formData.role} onChange={handleChange} className="mt-1 block w-full input">
@@ -212,78 +219,5 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onSave, onClose, fe
         </Modal>
     )
 }
-
-interface ResetPasswordModalProps {
-    user: User;
-    onClose: () => void;
-    onReset: (userId: string, newPass: string) => { success: boolean; message: string; };
-}
-
-const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, onReset }) => {
-    const { t } = useLocalization();
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-
-        if (!newPassword) {
-            setError(t('passwordCannotBeEmpty'));
-            return;
-        }
-
-        if (newPassword !== confirmPassword) {
-            setError(t('passwordsDoNotMatch'));
-            return;
-        }
-        
-        const result = onReset(user.id, newPassword);
-        if (result.success) {
-            alert(t('passwordResetSuccessfully'));
-            onClose();
-        } else {
-            setError(t(result.message as keyof typeof translations['en']));
-        }
-    };
-    
-    return (
-         <Modal isOpen={true} onClose={onClose} title={t('setNewPassword')}>
-            <form onSubmit={handleSubmit}>
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-600">{t('enterNewPasswordFor', { name: user.name })}</p>
-                    {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-                    <div>
-                        <label className="block text-sm font-medium">{t('newPassword')}</label>
-                        <input 
-                            type="password" 
-                            value={newPassword} 
-                            onChange={(e) => setNewPassword(e.target.value)} 
-                            required 
-                            className="mt-1 block w-full input"
-                        />
-                    </div>
-                     <div>
-                        <label className="block text-sm font-medium">{t('confirmNewPassword')}</label>
-                        <input 
-                            type="password" 
-                            value={confirmPassword} 
-                            onChange={(e) => setConfirmPassword(e.target.value)} 
-                            required 
-                            className="mt-1 block w-full input"
-                        />
-                    </div>
-                </div>
-                <div className="mt-6 flex justify-end gap-4 border-t pt-4">
-                    <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md">{t('cancel')}</button>
-                    <button type="submit" className="px-4 py-2 bg-brand-gold text-white rounded-md">{t('resetPassword')}</button>
-                </div>
-            </form>
-            <style>{`.input { padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; }`}</style>
-        </Modal>
-    );
-}
-
 
 export default AdminUsers;

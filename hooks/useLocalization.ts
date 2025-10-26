@@ -25,8 +25,13 @@ export const useLocalization = () => {
     return translation;
   };
   
-  const getLocalized = (field: LocalizedString) => {
-    return field[language];
+  const getLocalized = (field: LocalizedString | null | undefined) => {
+    if (!field) {
+      return ''; // Return empty string if the whole field is missing to prevent crashes.
+    }
+    // Return the translation for the current language, or fall back to English,
+    // or finally return an empty string if even English is missing.
+    return field[language] || field.en || '';
   }
 
   // Fix: Return `setLanguage` so components using this hook can change the language.

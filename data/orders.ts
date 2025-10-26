@@ -1,39 +1,90 @@
-
 import { Order } from '../types';
+import { products } from './products';
 
 export const orders: Order[] = [
+  {
+    id: 'JU-1001',
+    userId: '2',
+    customerName: 'Customer One',
+    customerContact: '96891234567',
+    items: [
+      { product: products[0], quantity: 1 },
+      { product: products[2], quantity: 1 },
+    ],
+    total: 644.950,
+    date: '2024-05-20T10:30:00Z',
+    status: 'Delivered',
+    paymentMethod: 'Thawani',
+    isGift: false,
+    // Fix: Added missing 'country' property.
+    country: 'oman',
+    governorate: 'muscat',
+    wilayah: 'seeb',
+    addCard: false,
+    deliveryFee: 2.000,
+  },
+  {
+    id: 'JU-1002',
+    customerName: 'Guest User',
+    customerContact: '96898765432',
+    items: [
+      { product: products[1], quantity: 1 },
+    ],
+    total: 330.350,
+    date: '2024-05-22T14:00:00Z',
+    status: 'Processing',
+    paymentMethod: 'WhatsApp',
+    isGift: true,
+    recipientName: 'Jane Doe',
+    // Fix: Added missing 'country' property.
+    country: 'oman',
+    governorate: 'dakhiliyah',
+    wilayah: 'nizwa',
+    addCard: true,
+    cardMessage: 'Happy Birthday!',
+    deliveryFee: 3.000,
+    additionalNotes: 'Please deliver in the evening.',
+  },
+  {
+    id: 'JU-1003',
+    userId: '3',
+    customerName: 'Customer Two',
+    customerContact: '96895555555',
+    items: [
+      { product: products[3], quantity: 2 },
+      { product: products[4], quantity: 1 },
+    ],
+    total: 911.85,
+    date: '2024-05-23T09:15:00Z',
+    status: 'Shipped',
+    discountAmount: 101.317,
+    couponCode: 'WELCOME20',
+    paymentMethod: 'Thawani',
+    isGift: false,
+    // Fix: Added missing 'country' property.
+    country: 'oman',
+    governorate: 'north_batinah',
+    wilayah: 'sohar',
+    addCard: false,
+    deliveryFee: 2.500,
+  },
     {
-        id: 'ORD001',
-        userId: '2',
-        userName: 'Customer One',
-        date: '2024-07-20',
-        items: [
-            { productId: '1', productName: { en: 'Serene Diamond Necklace', ar: 'قلادة الألماس الهادئة' }, quantity: 1, price: 481.250 },
-            { productId: '4', productName: { en: 'Emerald Drop Earrings', ar: 'أقراط الزمرد المتدلية' }, quantity: 1, price: 377.300 }
-        ],
-        total: 858.550,
-        status: 'delivered',
-    },
-    {
-        id: 'ORD002',
-        userId: '3',
-        userName: 'Customer Two',
-        date: '2024-07-21',
-        items: [
-            { productId: '6', productName: { en: 'Rose Gold Band', ar: 'خاتم من الذهب الوردي' }, quantity: 2, price: 115.500 }
-        ],
-        total: 231.000,
-        status: 'shipped',
-    },
-    {
-        id: 'ORD003',
-        userId: '2',
-        userName: 'Customer One',
-        date: '2024-07-22',
-        items: [
-            { productId: '3', productName: { en: 'Azure Charm Bracelet', ar: 'سوار السحر اللازوردي' }, quantity: 1, price: 161.700 }
-        ],
-        total: 161.700,
-        status: 'processing',
-    },
+    id: 'JU-1004',
+    customerName: 'New Customer',
+    customerContact: '96894444123',
+    items: [
+      { product: products[7], quantity: 1 },
+    ],
+    total: 282.200,
+    date: '2024-05-24T11:00:00Z',
+    status: 'Pending',
+    paymentMethod: 'WhatsApp',
+    isGift: false,
+    // Fix: Added missing 'country' property.
+    country: 'oman',
+    governorate: 'dhofar',
+    wilayah: 'salalah',
+    addCard: false,
+    deliveryFee: 5.000,
+  },
 ];

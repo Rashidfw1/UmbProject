@@ -33,7 +33,7 @@ const ProductsPage: React.FC = () => {
             className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-300 ${
               selectedCategory === category
                 ? 'bg-brand-gold text-white'
-                : 'bg-gray-200 text-brand-dark hover:bg-gray-300'
+                : 'bg-white text-brand-dark shadow-sm hover:bg-gray-100'
             }`}
           >
             {t(category as keyof typeof translations['en'])}
@@ -42,7 +42,7 @@ const ProductsPage: React.FC = () => {
       </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
         {filteredProducts.map(product => (
           <ProductCard key={product.id} product={product} />
         ))}

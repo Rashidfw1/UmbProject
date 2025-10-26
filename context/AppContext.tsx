@@ -1,79 +1,169 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { Language, CurrencyCode, Product, CartItem, WishlistItem, User, Order, Coupon, HomepageContent } from '../types';
-import { products as initialProducts } from '../data/products';
-import { users as initialUsers } from '../data/users';
-import { orders as initialOrders } from '../data/orders';
-import { coupons as initialCoupons } from '../data/coupons';
-import { homepageContent as initialHomepageContent } from '../data/homepageContent';
+import React, { createContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { Product, CartItem, Language, CurrencyCode, User, Order, Coupon, HomepageContent, UserRole, UserStatus, OrderStatus, AboutUsContent, FAQItem, SocialMediaLinks } from '../types';
+import * as api from '../services/api';
+// Import default data for fallback
+import { siteSettings as defaultSiteSettingsData } from '../data/siteSettings';
+import { homepageContent as defaultHomepageContentData } from '../data/homepageContent';
+import { homepageTextContent as defaultHomepageTextData } from '../data/homepageTextContent';
+import { aboutUsContent as defaultAboutUsData } from '../data/aboutUsContent';
+import { faqContent as defaultFaqData } from '../data/faqContent';
 
 interface AppContextType {
   language: Language;
   setLanguage: (language: Language) => void;
   currency: CurrencyCode;
   setCurrency: (currency: CurrencyCode) => void;
+  products: Product[];
+  addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
+  updateProduct: (product: Product) => Promise<Product>;
+  deleteProduct: (productId: string) => Promise<void>;
   cart: CartItem[];
   addToCart: (product: Product, quantity: number) => void;
-  updateCartQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
+  updateCartQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   cartCount: number;
-  cartTotal: number;
-  wishlist: WishlistItem[];
+  cartSubtotal: number;
+  wishlist: Product[];
   addToWishlist: (product: Product) => void;
   isProductInWishlist: (productId: string) => boolean;
   wishlistCount: number;
   user: User | null;
-  login: (email: string, password: string) => { success: boolean, message: string };
-  logout: () => void;
-  signUp: (name: string, email: string, password: string) => { success: boolean, message: string };
+  login: (email: string, pass: string) => Promise<{ success: boolean; message: string }>;
+  logout: () => Promise<void>;
+  signUp: (name: string, email: string, pass: string) => Promise<{ success: boolean; message: string; }>;
   users: User[];
-  addUser: (user: Omit<User, 'id'>) => { success: boolean, message: string };
-  updateUser: (user: User) => { success: boolean, message: string };
-  deleteUser: (userId: string) => void;
-  resetUserPassword: (userId: string, newPass: string) => { success: boolean, message: string };
-  products: Product[];
-  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  addUser: (user: Omit<User, 'id'>) => Promise<{ success: boolean, message: string }>;
+  updateUser: (user: User) => Promise<{ success: boolean, message: string }>;
+  deleteUser: (userId: string) => Promise<void>;
   orders: Order[];
-  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  addOrder: (order: Omit<Order, 'id'>) => Promise<Order | null>;
+  updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
   coupons: Coupon[];
-  addCoupon: (coupon: Omit<Coupon, 'id'>) => { success: boolean, message: string };
-  updateCoupon: (coupon: Coupon) => { success: boolean, message: string };
-  deleteCoupon: (couponId: string) => void;
-  homepageContent: HomepageContent;
-  updateHomepageContent: (content: HomepageContent) => void;
+  addCoupon: (coupon: Omit<Coupon, 'id'>) => Promise<{ success: boolean, message: string }>;
+  updateCoupon: (coupon: Coupon) => Promise<{ success: boolean, message: string }>;
+  deleteCoupon: (couponId: string) => Promise<void>;
+  appliedCoupon: Coupon | null;
+  applyCoupon: (code: string) => { success: boolean, message: string };
+  removeCoupon: () => void;
+  homepageContent: HomepageContent | null;
+  updateHomepageContent: (content: HomepageContent) => Promise<void>;
+  logoUrl: string | null;
+  updateLogoUrl: (newUrl: string) => Promise<void>;
+  aboutUsContent: AboutUsContent | null;
+  updateAboutUsContent: (content: AboutUsContent) => Promise<void>;
+  faqContent: FAQItem[] | null;
+  updateFaqContent: (content: FAQItem[]) => Promise<void>;
+  socialMediaLinks: SocialMediaLinks | null;
+  updateSocialMediaLinks: (links: SocialMediaLinks) => Promise<void>;
+  isLoading: boolean;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
 
-interface AppProviderProps {
-  children: ReactNode;
-}
-
-export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>('en');
-  const [currency, setCurrency] = useState<CurrencyCode>('OMR');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [language, setLanguage] = useState<Language>(() => (localStorage.getItem('language') as Language) || 'en');
+  const [currency, setCurrency] = useState<CurrencyCode>(() => (localStorage.getItem('currency') as CurrencyCode) || 'OMR');
+  const [cart, setCart] = useState<CartItem[]>(() => JSON.parse(localStorage.getItem('cart') || '[]'));
+  const [wishlist, setWishlist] = useState<Product[]>(() => JSON.parse(localStorage.getItem('wishlist') || '[]'));
   const [user, setUser] = useState<User | null>(null);
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [users, setUsers] = useState<User[]>(initialUsers);
-  const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [coupons, setCoupons] = useState<Coupon[]>(initialCoupons);
-  const [homepageContent, setHomepageContent] = useState<HomepageContent>(initialHomepageContent);
-
-
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    document.documentElement.lang = lang;
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  };
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(() => JSON.parse(localStorage.getItem('appliedCoupon') || 'null'));
   
-  useEffect(() => {
-    // Set initial language direction
-    document.documentElement.lang = language;
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-  }, [language]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [siteSettings, setSiteSettings] = useState<any>(null);
 
+  useEffect(() => {
+    // Subscribe to auth changes
+    const { data: authListener } = api.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const userProfile = await api.getUserProfile();
+        setUser(userProfile);
+      } else {
+        setUser(null);
+      }
+    });
+
+    // Fetch all initial data
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const results = await Promise.allSettled([
+          api.getProducts(),
+          api.getUsers(),
+          api.getOrders(),
+          api.getCoupons(),
+          api.getSiteSettings()
+        ]);
+
+        const [productsResult, usersResult, ordersResult, couponsResult, siteSettingsResult] = results;
+
+        if (productsResult.status === 'fulfilled') {
+          setProducts(productsResult.value);
+        } else {
+          console.error("Failed to fetch products:", productsResult.reason);
+        }
+
+        if (usersResult.status === 'fulfilled') {
+          setUsers(usersResult.value);
+        } else {
+          console.error("Failed to fetch users:", usersResult.reason);
+        }
+        
+        if (ordersResult.status === 'fulfilled') {
+          setOrders(ordersResult.value);
+        } else {
+          console.error("Failed to fetch orders:", ordersResult.reason);
+        }
+        
+        if (couponsResult.status === 'fulfilled') {
+          setCoupons(couponsResult.value);
+        } else {
+          console.error("Failed to fetch coupons:", couponsResult.reason);
+          setCoupons([]); // Set to empty array on failure
+        }
+
+        if (siteSettingsResult.status === 'fulfilled') {
+          setSiteSettings(siteSettingsResult.value);
+        } else {
+           console.error("CRITICAL: Failed to fetch site settings, falling back to local defaults.", siteSettingsResult.reason);
+           // Fallback to locally imported default settings to prevent app from crashing/hanging
+           const defaultSettings = {
+              logo_url: defaultSiteSettingsData.defaultLogoUrl,
+              social_media_links: defaultSiteSettingsData.defaultSocialMediaLinks,
+              homepage_content: {
+                ...defaultHomepageContentData,
+                ...defaultHomepageTextData
+              },
+              about_us_content: defaultAboutUsData,
+              faq_content: defaultFaqData,
+           };
+           setSiteSettings(defaultSettings);
+        }
+
+      } catch (error) {
+          console.error("A critical error occurred during the data fetching process:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Persist user preferences and cart to Local Storage
+  useEffect(() => { localStorage.setItem('language', language); }, [language]);
+  useEffect(() => { localStorage.setItem('currency', currency); }, [currency]);
+  useEffect(() => { localStorage.setItem('cart', JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { localStorage.setItem('wishlist', JSON.stringify(wishlist)); }, [wishlist]);
+  useEffect(() => { localStorage.setItem('appliedCoupon', JSON.stringify(appliedCoupon)); }, [appliedCoupon]);
+  
   // Cart Logic
   const addToCart = (product: Product, quantity: number) => {
     setCart(prevCart => {
@@ -86,143 +176,141 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       return [...prevCart, { product, quantity }];
     });
   };
-
+  const removeFromCart = (productId: string) => setCart(prev => prev.filter(item => item.product.id !== productId));
   const updateCartQuantity = (productId: string, quantity: number) => {
-    setCart(prevCart =>
-      prevCart.map(item =>
-        item.product.id === productId ? { ...item, quantity: Math.max(0, quantity) } : item
-      ).filter(item => item.quantity > 0)
-    );
+    if (quantity <= 0) removeFromCart(productId);
+    else setCart(prev => prev.map(item => item.product.id === productId ? { ...item, quantity } : item));
   };
-
-  const removeFromCart = (productId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
-  };
-  
-  const clearCart = () => {
-    setCart([]);
-  }
-
-  const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
-  const cartTotal = cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
+  const clearCart = () => setCart([]);
+  const cartCount = useMemo(() => cart.reduce((count, item) => count + item.quantity, 0), [cart]);
+  const cartSubtotal = useMemo(() => cart.reduce((total, item) => total + item.product.price * item.quantity, 0), [cart]);
 
   // Wishlist Logic
-  const isProductInWishlist = (productId: string) => {
-    return wishlist.some(item => item.id === productId);
-  };
-  
+  const isProductInWishlist = (productId: string) => wishlist.some(p => p.id === productId);
   const addToWishlist = (product: Product) => {
-    setWishlist(prevWishlist => {
-      if (isProductInWishlist(product.id)) {
-        return prevWishlist.filter(item => item.id !== product.id);
-      }
-      return [...prevWishlist, product];
-    });
+    setWishlist(prev => isProductInWishlist(product.id) ? prev.filter(p => p.id !== product.id) : [...prev, product]);
   };
-
-  const wishlistCount = wishlist.length;
+  const wishlistCount = useMemo(() => wishlist.length, [wishlist]);
 
   // Auth Logic
-  const login = (email: string, password: string): { success: boolean, message: string } => {
-    const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (foundUser && foundUser.password === password) {
-        if (foundUser.status !== 'active') {
-             return { success: false, message: 'accountNotActive' };
-        }
-      setUser(foundUser);
-      return { success: true, message: 'loginSuccess' };
+  const login = async (email: string, pass: string) => await api.login(email, pass);
+  const logout = async () => await api.logout();
+  const signUp = async (name: string, email: string, pass: string) => await api.signUp(name, email, pass);
+  
+  // Product Management
+  const addProduct = async (productData: Omit<Product, 'id'>) => {
+      const newProduct = await api.addProduct(productData);
+      setProducts(prev => [newProduct, ...prev]);
+      return newProduct;
+  };
+  const updateProduct = async (productData: Product) => {
+      const updatedProduct = await api.updateProduct(productData);
+      setProducts(prev => prev.map(p => p.id === productData.id ? updatedProduct : p));
+      return updatedProduct;
+  };
+  const deleteProduct = async (productId: string) => {
+      await api.deleteProduct(productId);
+      setProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  // User Management
+  const addUser = async (userData: Omit<User, 'id'>) => {
+    const result = await api.addUser(userData);
+    if(result.success && result.user) setUsers(prev => [...prev, result.user!]);
+    return result;
+  };
+  const updateUser = async (userData: User) => {
+    const result = await api.updateUser(userData);
+    if(result.success && result.user) setUsers(prev => prev.map(u => u.id === userData.id ? { ...u, ...result.user } : u));
+    return result;
+  };
+  const deleteUser = async (userId: string) => {
+    await api.deleteUser(userId);
+    setUsers(prev => prev.filter(u => u.id !== userId));
+  };
+
+  // Order Management
+  const addOrder = async (orderData: Omit<Order, 'id'>) => {
+    const newOrder = await api.addOrder(orderData);
+    if(newOrder) setOrders(prev => [newOrder, ...prev]);
+    if (orderData.status !== 'Pending Payment') {
+      clearCart();
+      removeCoupon();
     }
-    return { success: false, message: 'invalidCredentials' };
+    return newOrder;
   };
-
-  const logout = () => {
-    setUser(null);
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    const success = await api.updateOrderStatus(orderId, status);
+    if(success) setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
   };
-
-  const signUp = (name: string, email: string, password: string): { success: boolean, message: string } => {
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-        return { success: false, message: 'emailExists' };
+  
+  // Coupon Management
+  const addCoupon = async (couponData: Omit<Coupon, 'id'>) => {
+      const result = await api.addCoupon(couponData);
+      if(result.success && result.coupon) setCoupons(prev => [result.coupon!, ...prev]);
+      return result;
+  };
+  const updateCoupon = async (couponData: Coupon) => {
+      const result = await api.updateCoupon(couponData);
+      if(result.success && result.coupon) setCoupons(prev => prev.map(c => c.id === couponData.id ? result.coupon! : c));
+      return result;
+  };
+  const deleteCoupon = async (couponId: string) => {
+      await api.deleteCoupon(couponId);
+      setCoupons(prev => prev.filter(c => c.id !== couponId));
+  };
+  const applyCoupon = (code: string) => {
+    const coupon = coupons.find(c => c.code.toUpperCase() === code.toUpperCase());
+    const today = new Date().toISOString().split('T')[0];
+    if (coupon && coupon.isActive && coupon.expiryDate >= today) {
+        setAppliedCoupon(coupon);
+        return { success: true, message: 'couponApplied' };
     }
-    const newUser: User = {
-        id: String(Date.now()),
-        name,
-        email,
-        password,
-        role: 'customer',
-        status: 'active'
-    };
-    setUsers([...users, newUser]);
-    return { success: true, message: 'signUpSuccess' };
-  }
-  
-  // Admin User Management
-  const addUser = (userData: Omit<User, 'id'>): { success: boolean, message: string } => {
-      if(users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
-          return { success: false, message: 'emailExists' };
-      }
-      const newUser: User = { ...userData, id: String(Date.now()) };
-      setUsers([...users, newUser]);
-      return { success: true, message: '' };
+    return { success: false, message: 'invalidCoupon' };
   };
-  
-  const updateUser = (userData: User): { success: boolean, message: string } => {
-      if(users.some(u => u.id !== userData.id && u.email.toLowerCase() === userData.email.toLowerCase())) {
-          return { success: false, message: 'emailExists' };
-      }
-      setUsers(users.map(u => u.id === userData.id ? { ...u, ...userData, password: u.password } : u));
-      return { success: true, message: '' };
+  const removeCoupon = () => setAppliedCoupon(null);
+
+  // Site Content and Settings Management
+  const updateHomepageContent = async (content: HomepageContent) => {
+    const newSettings = await api.updateSiteSettings({ homepage_content: content });
+    if (newSettings) setSiteSettings(newSettings);
   };
-  
-  const deleteUser = (userId: string) => {
-      setUsers(users.filter(u => u.id !== userId));
+  const updateLogoUrl = async (newUrl: string) => {
+    const newSettings = await api.updateSiteSettings({ logo_url: newUrl });
+    if (newSettings) setSiteSettings(newSettings);
   };
-  
-  const resetUserPassword = (userId: string, newPass: string): { success: boolean, message: string } => {
-      setUsers(users.map(u => u.id === userId ? { ...u, password: newPass } : u));
-      return { success: true, message: 'passwordResetSuccessfully' };
-  }
-  
-  // Admin Coupon Management
-  const addCoupon = (couponData: Omit<Coupon, 'id'>): { success: boolean, message: string } => {
-      if(coupons.some(c => c.code.toUpperCase() === couponData.code.toUpperCase())) {
-          return { success: false, message: 'couponCodeExists' };
-      }
-      const newCoupon: Coupon = { ...couponData, code: couponData.code.toUpperCase(), id: String(Date.now()) };
-      setCoupons([...coupons, newCoupon]);
-      return { success: true, message: '' };
+  const updateAboutUsContent = async (content: AboutUsContent) => {
+    const newSettings = await api.updateSiteSettings({ about_us_content: content });
+    if (newSettings) setSiteSettings(newSettings);
+  };
+  const updateFaqContent = async (content: FAQItem[]) => {
+    const newSettings = await api.updateSiteSettings({ faq_content: content });
+    if (newSettings) setSiteSettings(newSettings);
+  };
+  const updateSocialMediaLinks = async (links: SocialMediaLinks) => {
+    const newSettings = await api.updateSiteSettings({ social_media_links: links });
+    if (newSettings) setSiteSettings(newSettings);
   };
 
-  const updateCoupon = (couponData: Coupon): { success: boolean, message: string } => {
-       if(coupons.some(c => c.id !== couponData.id && c.code.toUpperCase() === couponData.code.toUpperCase())) {
-          return { success: false, message: 'couponCodeExists' };
-      }
-      setCoupons(coupons.map(c => c.id === couponData.id ? { ...couponData, code: couponData.code.toUpperCase() } : c));
-      return { success: true, message: '' };
+  const value: AppContextType = {
+    language, setLanguage,
+    currency, setCurrency,
+    products, addProduct, updateProduct, deleteProduct,
+    cart, addToCart, removeFromCart, updateCartQuantity, clearCart, cartCount, cartSubtotal,
+    wishlist, addToWishlist, isProductInWishlist, wishlistCount,
+    user, login, logout, signUp, 
+    users, addUser, updateUser, deleteUser,
+    orders, addOrder, updateOrderStatus,
+    coupons, addCoupon, updateCoupon, deleteCoupon,
+    appliedCoupon, applyCoupon, removeCoupon,
+    homepageContent: siteSettings?.homepage_content,
+    updateHomepageContent,
+    logoUrl: siteSettings?.logo_url, updateLogoUrl,
+    aboutUsContent: siteSettings?.about_us_content, updateAboutUsContent,
+    faqContent: siteSettings?.faq_content, updateFaqContent,
+    socialMediaLinks: siteSettings?.social_media_links, updateSocialMediaLinks,
+    isLoading,
   };
 
-  const deleteCoupon = (couponId: string) => {
-      setCoupons(coupons.filter(c => c.id !== couponId));
-  };
-  
-  // Admin Homepage Management
-  const updateHomepageContent = (content: HomepageContent) => {
-    setHomepageContent(content);
-  }
-
-  return (
-    <AppContext.Provider value={{
-      language, setLanguage,
-      currency, setCurrency,
-      cart, addToCart, updateCartQuantity, removeFromCart, clearCart, cartCount, cartTotal,
-      wishlist, addToWishlist, isProductInWishlist, wishlistCount,
-      user, login, logout, signUp,
-      users, addUser, updateUser, deleteUser, resetUserPassword,
-      products, setProducts,
-      orders, setOrders,
-      coupons, addCoupon, updateCoupon, deleteCoupon,
-      homepageContent, updateHomepageContent,
-    }}>
-      {children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

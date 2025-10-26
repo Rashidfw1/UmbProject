@@ -9,6 +9,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+      /* Base styles for a better mobile experience */
+      html {
+        -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS/Android */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-size: 16px;
+      }
+      @media (max-width: 640px) {
+        html {
+          font-size: 15px; /* Slightly smaller base font on small devices */
+        }
+      }
+    </style>
     <script>
       tailwind.config = {
         theme: {
@@ -18,7 +32,7 @@
               'sans': ['Poppins', 'sans-serif'],
             },
             colors: {
-              'brand-gold': '#BFA181',
+              'brand-gold': '#d4b0b0',
               'brand-dark': '#1a1a1a',
               'brand-light': '#f7f5f2',
               'brand-gray': '#575757',
@@ -39,20 +53,20 @@
                     '0%': { opacity: '0', transform: 'translateY(10px)' },
                     '100%': { opacity: '1', transform: 'translateY(0)' },
                 },
-                'slide-in-right': {
-                    '0%': { transform: 'translateX(100%)' },
+                 'slide-in-from-left': {
+                    '0%': { transform: 'translateX(-100%)' },
                     '100%': { transform: 'translateX(0)' },
                 },
-                'slide-out-right': {
-                    '0%': { transform: 'translateX(0)' },
-                    '100%': { transform: 'translateX(100%)' },
+                'slide-in-from-right': {
+                    '0%': { transform: 'translateX(100%)' },
+                    '100%': { transform: 'translateX(0)' },
                 },
             },
             animation: {
                 'fade-in-down': 'fade-in-down 0.5s ease-out forwards',
                 'fade-in-up': 'fade-in-up 0.5s ease-out 0.2s forwards',
-                'slide-in-right': 'slide-in-right 0.3s ease-out forwards',
-                'slide-out-right': 'slide-out-right 0.3s ease-in forwards',
+                'slide-in-from-left': 'slide-in-from-left 0.3s ease-out forwards',
+                'slide-in-from-right': 'slide-in-from-right 0.3s ease-out forwards',
             }
           }
         }
@@ -66,7 +80,8 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.26.0",
-    "react-dropzone": "https://aistudiocdn.com/react-dropzone@^14.3.8"
+    "react-dropzone": "https://aistudiocdn.com/react-dropzone@^14.3.8",
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.45.0"
   }
 }
 </script>

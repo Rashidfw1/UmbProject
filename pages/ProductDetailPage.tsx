@@ -33,7 +33,7 @@ const ProductDetailPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
         {/* Product Image */}
         <div>
           <img src={product.imageUrl} alt={getLocalized(product.name)} className="w-full h-auto object-cover rounded-lg shadow-lg" />
@@ -45,19 +45,19 @@ const ProductDetailPage: React.FC = () => {
           <p className="mt-6 text-brand-gray">{getLocalized(product.description)}</p>
           
           <div className="mt-8 flex items-center gap-4">
-            <label htmlFor="quantity" className="font-semibold">{t('quantity')}:</label>
+            <label htmlFor="quantity" className="font-semibold text-lg">{t('quantity')}:</label>
             <input
               id="quantity"
               type="number"
               min="1"
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-20 p-2 border border-gray-300 rounded text-center"
+              className="w-24 p-2 border border-gray-300 rounded text-center text-lg"
             />
           </div>
           <button
             onClick={handleAddToCart}
-            className="mt-8 w-full md:w-auto px-10 py-4 bg-brand-gold text-white font-semibold rounded-full hover:bg-opacity-90 transition-colors duration-300"
+            className="mt-8 w-full px-10 py-4 bg-brand-gold text-white font-semibold rounded-full hover:bg-opacity-90 transition-colors duration-300 text-lg"
           >
             {t('addToCart')}
           </button>
@@ -68,7 +68,7 @@ const ProductDetailPage: React.FC = () => {
       {relatedProducts.length > 0 && (
           <div className="mt-20">
               <h2 className="text-2xl font-serif font-bold text-center text-brand-dark mb-8">{t('relatedProducts')}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
                   {relatedProducts.map(p => (
                       <ProductCard key={p.id} product={p} />
                   ))}

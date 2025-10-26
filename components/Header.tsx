@@ -6,7 +6,7 @@ import { AppContext } from '../context/AppContext';
 import { useLocalization } from '../hooks/useLocalization';
 import { currencies } from '../data/currencies';
 import { Language, CurrencyCode } from '../types';
-import { UmbrellaIcon, CartIcon, HeartIcon, SearchIcon, ChevronDownIcon, MenuIcon, XIcon, UserIcon, CameraIcon, GlobeIcon, SpinnerIcon } from './Icons';
+import { CartIcon, HeartIcon, SearchIcon, ChevronDownIcon, MenuIcon, XIcon, UserIcon, CameraIcon, GlobeIcon, SpinnerIcon } from './Icons';
 import Modal from './Modal';
 import { translations } from '../data/localization';
 import { findSimilarProductsByImage } from '../services/geminiService';
@@ -14,7 +14,7 @@ import { findSimilarProductsByImage } from '../services/geminiService';
 const Header: React.FC = () => {
     const context = useContext(AppContext);
     const { t, language, setLanguage, getLocalized } = useLocalization();
-    const { currency, setCurrency, cartCount, wishlistCount, user, login, logout, signUp, products } = context!;
+    const { currency, setCurrency, cartCount, wishlistCount, user, login, logout, signUp, products, logoUrl } = context!;
     
     const [searchTerm, setSearchTerm] = useState('');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -26,6 +26,7 @@ const Header: React.FC = () => {
     const [password, setPassword] = useState('');
     const [authError, setAuthError] = useState('');
     const [authSuccess, setAuthSuccess] = useState('');
+    const [isAuthLoading, setIsAuthLoading] = useState(false);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -101,28 +102,41 @@ const Header: React.FC = () => {
         setIsSignUpModalOpen(true);
     };
 
-    const handleLoginSubmit = (e: React.FormEvent) => {
+    const handleLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const result = login(email, password);
+        setIsAuthLoading(true);
+        setAuthError('');
+        const result = await login(email, password);
         if (result.success) {
             setIsLoginModalOpen(false);
             resetAuthForms();
         } else {
-            setAuthError(t(result.message as keyof typeof translations['en']));
+            setAuthError(result.message);
+        }
+        setIsAuthLoading(false);
+    }
+
+    const handleSignUpSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsAuthLoading(true);
+        setAuthError('');
+        setAuthSuccess('');
+        const result = await signUp(name, email, password);
+        setIsAuthLoading(false); // Stop loading indicator regardless of outcome
+        if (result.success) {
+            setAuthSuccess(result.message);
+            // On success, the onAuthStateChange listener handles the session update.
+            // We just need to close the modal after a brief delay for the user to see the success message.
+            setTimeout(() => {
+                setIsSignUpModalOpen(false); // This will trigger onClose which resets the form
+            }, 2000);
+        } else {
+            setAuthError(result.message);
         }
     }
 
-    const handleSignUpSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const result = signUp(name, email, password);
-        if (result.success) {
-            setAuthSuccess(t(result.message as keyof typeof translations['en']));
-            setTimeout(() => {
-                openLoginModal();
-            }, 2000);
-        } else {
-            setAuthError(t(result.message as keyof typeof translations['en']));
-        }
+    const handleLogout = async () => {
+        await logout();
     }
     
     const navLinks = [
@@ -131,16 +145,16 @@ const Header: React.FC = () => {
         ...(user?.role === 'admin' ? [{ to: "/admin", label: t('admin') }] : [])
     ];
     
-    const NavLinksComponent: React.FC = () => (
+    const NavLinksComponent: React.FC<{mobile?: boolean}> = ({mobile = false}) => (
         <>
             {navLinks.map(link => (
                 <NavLink
                     key={link.to}
                     to={link.to}
                     className={({ isActive }) =>
-                        `px-3 py-2 rounded-md text-base md:text-sm font-medium ${
-                            isActive ? 'text-brand-gold' : 'text-brand-dark hover:text-brand-gold'
-                        }`
+                       mobile
+                         ? `block px-4 py-3 text-lg font-semibold rounded-lg ${isActive ? 'bg-brand-light text-brand-gold' : 'text-brand-dark hover:bg-brand-light/50'}`
+                         : `px-3 py-2 rounded-md text-base md:text-sm font-medium ${isActive ? 'text-brand-gold' : 'text-brand-dark hover:text-brand-gold'}`
                     }
                 >
                     {link.label}
@@ -155,9 +169,8 @@ const Header: React.FC = () => {
             <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     <div className="flex items-center">
-                        <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-2xl font-serif font-bold text-brand-dark">
-                            <UmbrellaIcon className="h-6 w-6 text-brand-gold" />
-                            Jewelry Umbrella
+                        <Link to="/" className="flex-shrink-0 flex items-center">
+                            {logoUrl && <img src={logoUrl} alt="Jewelry Umbrella Logo" className="h-10 w-auto" />}
                         </Link>
                         <div className="hidden md:block">
                             <div className="ml-10 flex items-baseline space-x-4 rtl:space-x-reverse">
@@ -230,7 +243,7 @@ const Header: React.FC = () => {
                                         <div className="font-semibold">{t('welcomeUser', {name: user.name})}</div>
                                     </div>
                                     <div className="border-t my-1 border-gray-100"></div>
-                                    <button onClick={logout} className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-brand-light hover:text-brand-dark rounded-lg">{t('logout')}</button>
+                                    <button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-brand-light hover:text-brand-dark rounded-lg">{t('logout')}</button>
                                 </div>
                             </div>
                         ) : (
@@ -252,58 +265,59 @@ const Header: React.FC = () => {
                     </div>
                 </div>
             </nav>
-             {/* Mobile Menu */}
-             <div className={`fixed inset-0 z-40 md:hidden transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : (language === 'ar' ? 'translate-x-full' : '-translate-x-full')}`}>
-                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
-                <div className={`relative w-4/5 max-w-sm h-full bg-white shadow-lg p-6 ${language === 'ar' ? 'animate-slide-in-left' : ''}`}>
-                    <div className="flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-8">
-                             <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-xl font-serif font-bold text-brand-dark">
-                                <UmbrellaIcon className="h-5 w-5 text-brand-gold" />
-                                Jewelry Umbrella
-                            </Link>
-                             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2">
-                                <XIcon className="w-6 h-6"/>
-                             </button>
-                        </div>
-                        <nav className="flex flex-col gap-4">
-                            <NavLinksComponent/>
-                        </nav>
-                        <div className="mt-auto space-y-4">
-                            <div className="border-t pt-4 space-y-2">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-600">Language</span>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => handleLanguageChange('en')} className={`px-3 py-1 text-sm rounded-full ${language === 'en' ? 'bg-brand-gold text-white' : 'bg-gray-200'}`}>EN</button>
-                                        <button onClick={() => handleLanguageChange('ar')} className={`px-3 py-1 text-sm rounded-full ${language === 'ar' ? 'bg-brand-gold text-white' : 'bg-gray-200'}`}>AR</button>
+            {/* Mobile Menu */}
+            {isMobileMenuOpen && (
+                <div className="md:hidden fixed inset-0 z-50">
+                    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+                    <div className={`relative w-4/5 max-w-sm h-full bg-white shadow-lg p-6 ${language === 'ar' ? 'animate-slide-in-from-right' : 'animate-slide-in-from-left'}`}>
+                        <div className="flex flex-col h-full">
+                            <div className="flex items-center justify-between mb-8">
+                                <Link to="/" className="flex-shrink-0 flex items-center">
+                                    {logoUrl && <img src={logoUrl} alt="Jewelry Umbrella Logo" className="h-9 w-auto" />}
+                                </Link>
+                                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2">
+                                    <XIcon className="w-6 h-6"/>
+                                </button>
+                            </div>
+                            <nav className="flex flex-col gap-4">
+                                <NavLinksComponent mobile={true}/>
+                            </nav>
+                            <div className="mt-auto space-y-4">
+                                <div className="border-t pt-4 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-medium text-gray-600">Language</span>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => handleLanguageChange('en')} className={`px-3 py-1 text-sm rounded-full ${language === 'en' ? 'bg-brand-gold text-white' : 'bg-gray-200'}`}>EN</button>
+                                            <button onClick={() => handleLanguageChange('ar')} className={`px-3 py-1 text-sm rounded-full ${language === 'ar' ? 'bg-brand-gold text-white' : 'bg-gray-200'}`}>AR</button>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                         <span className="text-sm font-medium text-gray-600">Currency</span>
+                                          <select onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)} value={currency} className="bg-gray-200 border-none rounded-full text-sm px-3 py-1">
+                                            {Object.values(currencies).map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+                                         </select>
                                     </div>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                     <span className="text-sm font-medium text-gray-600">Currency</span>
-                                      <select onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)} value={currency} className="bg-gray-200 border-none rounded-full text-sm px-3 py-1">
-                                        {Object.values(currencies).map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
-                                     </select>
-                                </div>
+                                {user ? (
+                                    <>
+                                     <div className="text-center font-semibold">{t('welcomeUser', {name: user.name})}</div>
+                                     <button onClick={handleLogout} className="w-full text-center px-4 py-3 text-sm font-medium bg-brand-dark text-white rounded-full hover:bg-opacity-90">{t('logout')}</button>
+                                    </>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={openLoginModal} className="w-full px-4 py-3 text-sm font-medium text-brand-dark border border-gray-200 rounded-full">{t('login')}</button>
+                                        <button onClick={openSignUpModal} className="w-full px-4 py-3 text-sm font-medium bg-brand-gold text-white rounded-full hover:bg-opacity-90">{t('signUp')}</button>
+                                    </div>
+                                )}
                             </div>
-                            {user ? (
-                                <>
-                                 <div className="text-center font-semibold">{t('welcomeUser', {name: user.name})}</div>
-                                 <button onClick={logout} className="w-full text-center px-4 py-2 text-sm font-medium bg-brand-dark text-white rounded-full hover:bg-opacity-90">{t('logout')}</button>
-                                </>
-                            ) : (
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={openLoginModal} className="w-full px-4 py-2 text-sm font-medium text-brand-dark border border-gray-200 rounded-full">{t('login')}</button>
-                                    <button onClick={openSignUpModal} className="w-full px-4 py-2 text-sm font-medium bg-brand-gold text-white rounded-full hover:bg-opacity-90">{t('signUp')}</button>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
-             </div>
+            )}
         </header>
 
         {/* Auth Modals */}
-        <Modal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} title={t('loginToAccount')}>
+        <Modal isOpen={isLoginModalOpen} onClose={() => { setIsLoginModalOpen(false); resetAuthForms(); }} title={t('loginToAccount')}>
             <form onSubmit={handleLoginSubmit}>
                 {authError && <p className="text-red-500 text-sm mb-4">{authError}</p>}
                 <div className="space-y-4">
@@ -316,7 +330,9 @@ const Header: React.FC = () => {
                         <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-gold focus:border-brand-gold"/>
                     </div>
                 </div>
-                <button type="submit" className="w-full mt-6 py-2 px-4 bg-brand-gold text-white font-semibold rounded-md hover:bg-opacity-90">{t('login')}</button>
+                <button type="submit" disabled={isAuthLoading} className="w-full mt-6 py-2 px-4 bg-brand-gold text-white font-semibold rounded-md hover:bg-opacity-90 disabled:bg-gray-400">
+                  {isAuthLoading ? <SpinnerIcon className="w-5 h-5 animate-spin mx-auto" /> : t('login')}
+                </button>
                 <p className="mt-4 text-sm text-center">
                     {t('noAccount')}{' '}
                     <button type="button" onClick={openSignUpModal} className="font-medium text-brand-gold hover:underline">{t('signUp')}</button>
@@ -324,7 +340,7 @@ const Header: React.FC = () => {
             </form>
         </Modal>
 
-        <Modal isOpen={isSignUpModalOpen} onClose={() => setIsSignUpModalOpen(false)} title={t('createAccount')}>
+        <Modal isOpen={isSignUpModalOpen} onClose={() => { setIsSignUpModalOpen(false); resetAuthForms(); }} title={t('createAccount')}>
             <form onSubmit={handleSignUpSubmit}>
                 {authError && <p className="text-red-500 text-sm mb-4">{authError}</p>}
                 {authSuccess && <p className="text-green-600 text-sm mb-4">{authSuccess}</p>}
@@ -342,7 +358,9 @@ const Header: React.FC = () => {
                         <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-gold focus:border-brand-gold"/>
                     </div>
                 </div>
-                <button type="submit" className="w-full mt-6 py-2 px-4 bg-brand-gold text-white font-semibold rounded-md hover:bg-opacity-90">{t('signUp')}</button>
+                 <button type="submit" disabled={isAuthLoading} className="w-full mt-6 py-2 px-4 bg-brand-gold text-white font-semibold rounded-md hover:bg-opacity-90 disabled:bg-gray-400">
+                  {isAuthLoading ? <SpinnerIcon className="w-5 h-5 animate-spin mx-auto" /> : t('signUp')}
+                </button>
                 <p className="mt-4 text-sm text-center">
                     {t('haveAccount')}{' '}
                     <button type="button" onClick={openLoginModal} className="font-medium text-brand-gold hover:underline">{t('login')}</button>

@@ -73,7 +73,7 @@ const Chatbot: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-24 right-6 rtl:right-auto rtl:left-6 w-full max-w-sm h-[60vh] bg-white rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-200">
+        <div className="fixed bottom-24 right-6 rtl:right-auto rtl:left-6 w-[90vw] max-w-sm h-[70vh] bg-white rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-200">
           <header className="bg-brand-dark text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <UmbrellaIcon className="w-6 h-6 text-brand-gold" />
@@ -99,7 +99,7 @@ const Chatbot: React.FC = () => {
             {isLoading && (
                <div className="flex justify-start">
                    <div className="bg-gray-200 text-brand-dark rounded-2xl rounded-bl-none px-4 py-2">
-                       <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                       <div className="flex items-center space-x-1 rtl:space-reverse">
                            <span className="w-2 h-2 bg-brand-gray rounded-full animate-pulse delay-75"></span>
                            <span className="w-2 h-2 bg-brand-gray rounded-full animate-pulse delay-150"></span>
                            <span className="w-2 h-2 bg-brand-gray rounded-full animate-pulse delay-300"></span>
