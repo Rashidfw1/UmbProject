@@ -26,6 +26,7 @@ const CheckoutPage: React.FC = () => {
   const [addressLine1, setAddressLine1] = useState('');
   const [isGift, setIsGift] = useState(false);
   const [recipientName, setRecipientName] = useState('');
+  const [recipientContact, setRecipientContact] = useState('');
   const [addCard, setAddCard] = useState(false);
   const [cardMessage, setCardMessage] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
@@ -100,6 +101,7 @@ const CheckoutPage: React.FC = () => {
       paymentMethod,
       isGift,
       recipientName: isGift ? recipientName : undefined,
+      recipientContact: isGift ? recipientContact : undefined,
       country: selectedCountry,
       deliveryType: selectedCountry === 'oman' ? deliveryType : undefined,
       governorate: selectedCountry === 'oman' ? selectedGovernorate : undefined,
@@ -153,9 +155,15 @@ const CheckoutPage: React.FC = () => {
                   <span className="text-sm font-medium">{t('isGift')}</span>
                 </label>
                 {isGift && (
-                  <div className="mt-2 animate-fade-in-down">
-                    <label className="block text-sm font-medium">{t('recipientName')}</label>
-                    <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} required={isGift} className="mt-1 block w-full input" />
+                  <div className="mt-2 animate-fade-in-down grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium">{t('recipientName')}</label>
+                      <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} required={isGift} className="mt-1 block w-full input" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">{t('recipientContactNumber')}</label>
+                      <input type="tel" value={recipientContact} onChange={e => setRecipientContact(e.target.value)} required={isGift} className="mt-1 block w-full input" placeholder="e.g., 9689xxxxxxx" />
+                    </div>
                   </div>
                 )}
               </div>

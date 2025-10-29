@@ -58,6 +58,7 @@ export type Order = {
   paymentMethod: 'WhatsApp' | 'Thawani';
   isGift: boolean;
   recipientName?: string;
+  recipientContact?: string;
   country: string; // e.g., 'oman', 'uae'
   deliveryType?: 'home' | 'office'; // For Oman
   governorate?: string;

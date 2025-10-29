@@ -187,10 +187,17 @@ const OrderDetailsModal: React.FC<{ order: Order, onClose: () => void, getStatus
             <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div><strong>{t('customer')}:</strong> {order.customerName}</div>
-                    <div><strong>Contact:</strong> {order.customerContact}</div>
+                    <div><strong>{t('contact')}:</strong> {order.customerContact}</div>
                     <div><strong>{t('date')}:</strong> {new Date(order.date).toLocaleString()}</div>
                      <div><strong>{t('orderStatus')}:</strong> <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(order.status)}`}>{order.status}</span></div>
                 </div>
+                {order.isGift && (
+                    <div className="border-t pt-4">
+                        <h4 className="font-semibold">{t('giftDetails')}</h4>
+                        <p><strong>{t('recipientName')}:</strong> {order.recipientName}</p>
+                        {order.recipientContact && <p><strong>{t('recipientContact')}:</strong> {order.recipientContact}</p>}
+                    </div>
+                )}
                  <div className="border-t pt-4">
                     <h4 className="font-semibold">{t('shippingAddress')}</h4>
                     {getAddressDisplay()}

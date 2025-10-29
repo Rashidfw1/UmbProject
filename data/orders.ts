@@ -36,6 +36,7 @@ export const orders: Order[] = [
     paymentMethod: 'WhatsApp',
     isGift: true,
     recipientName: 'Jane Doe',
+    recipientContact: '96891112222',
     // Fix: Added missing 'country' property.
     country: 'oman',
     governorate: 'dakhiliyah',
